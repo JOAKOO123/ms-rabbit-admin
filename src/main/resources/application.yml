@@ -10,3 +10,22 @@ spring:
 
 server:
   port: ${SERVER_PORT:8090}
+
+hotel:
+  messaging:
+    dlx: hotel.dlx
+    exchanges:
+      eventos: hotel.eventos
+      documentos: hotel.documentos
+    queues:
+      notificaciones: q.notificaciones
+      tickets: q.tickets
+      documentos: q.documentos
+    routing:
+      notificaciones:
+        - usuario.registrado
+        - reserva.#
+      tickets:
+        - reserva.creada
+      documentos:
+        - comprobante
