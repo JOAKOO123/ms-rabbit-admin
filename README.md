@@ -12,7 +12,7 @@ Permite crear y eliminar colas (con su DLQ), exchanges y bindings.
 Ver `.env.example`. Las variables se pasan como variables de entorno del sistema o de la IDE, no se suben al repo.
 
 ## Puerto
-8083
+8090 (configurable mediante `SERVER_PORT`)
 
 ## Endpoints (requieren JWT de Cognito con grupo ADMIN)
 | Método | Ruta | Descripción |
