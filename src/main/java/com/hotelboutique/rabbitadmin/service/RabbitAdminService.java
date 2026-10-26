@@ -1,5 +1,6 @@
 package com.hotelboutique.rabbitadmin.service;
 
+import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.TopicExchange;
@@ -45,5 +46,33 @@ public class RabbitAdminService {
             return false;
         }
         return rabbitAdmin.deleteExchange(nombre);
+    }
+
+    public void crearBinding(String exchange, String cola, String routingKey) {
+        rabbitAdmin.declareBinding(binding(exchange, cola, routingKey));
+    }
+
+    public boolean eliminarBinding(String exchange, String cola, String routingKey) {
+        if (!exchangeExiste(exchange) || rabbitAdmin.getQueueProperties(cola) == null) {
+            return false;
+        }
+        rabbitAdmin.removeBinding(binding(exchange, cola, routingKey));
+        return true;
+    }
+
+    private Binding binding(String exchange, String cola, String routingKey) {
+        return new Binding(cola, Binding.DestinationType.QUEUE, exchange, routingKey, null);
+    }
+
+    private boolean exchangeExiste(String nombre) {
+        try {
+            rabbitAdmin.getRabbitTemplate().execute(channel -> {
+                channel.exchangeDeclarePassive(nombre);
+                return null;
+            });
+            return true;
+        } catch (AmqpException ex) {
+            return false;
+        }
     }
 }
