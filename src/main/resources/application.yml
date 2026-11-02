@@ -1,6 +1,8 @@
 spring:
   application:
     name: ms-rabbit-admin
+  config:
+    import: optional:file:.env[.properties]
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}

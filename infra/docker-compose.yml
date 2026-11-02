@@ -1,0 +1,61 @@
+# Clúster RabbitMQ de 2 nodos para AndesStay (EP2).
+# Se levanta en la EC2 dedicada (misma VPC que la EC2 de los microservicios):
+#   cp .env.example .env   (editar usuario, password y cookie)
+#   docker compose up -d
+#   ./setup.sh             (verifica el clúster y aplica las políticas de retención)
+name: andesstay-rabbit
+
+x-rabbit-env: &rabbit-env
+  # La cookie Erlang debe ser IDÉNTICA en ambos nodos: es lo que les permite formar el clúster.
+  RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:?define RABBITMQ_ERLANG_COOKIE en .env}
+  # Usuario propio: "guest" solo puede conectarse desde localhost, no desde la otra EC2.
+  RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:?define RABBITMQ_USERNAME en .env}
+  RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?define RABBITMQ_PASSWORD en .env}
+
+x-rabbit-base: &rabbit-base
+  image: rabbitmq:3.13-management
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+    interval: 15s
+    timeout: 10s
+    retries: 10
+    start_period: 40s
+
+services:
+  # Nodo 1: AMQP en 5672, Management UI en 15672
+  rabbit1:
+    <<: *rabbit-base
+    container_name: rabbit1
+    hostname: rabbit1
+    environment:
+      <<: *rabbit-env
+      RABBITMQ_NODENAME: rabbit@rabbit1
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbit1-data:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+
+  # Nodo 2: se une al clúster con el nodo 1 (AMQP en 5673, Management UI en 15673 para acceder a él por separado)
+  rabbit2:
+    <<: *rabbit-base
+    container_name: rabbit2
+    hostname: rabbit2
+    depends_on:
+      rabbit1:
+        condition: service_healthy
+    environment:
+      <<: *rabbit-env
+      RABBITMQ_NODENAME: rabbit@rabbit2
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    volumes:
+      - rabbit2-data:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+
+volumes:
+  rabbit1-data:
+  rabbit2-data:
