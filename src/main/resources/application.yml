@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: ms-rabbit-admin
+  config:
+    import: optional:file:.env[.properties]
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: ${RABBITMQ_VHOST:/}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://cognito-idp.${AWS_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}
+
+server:
+  port: ${SERVER_PORT:8090}
+
+hotel:
+  messaging:
+    dlx: hotel.dlx
+    exchanges:
+      eventos: hotel.eventos
+      documentos: hotel.documentos
+    queues:
+      notificaciones: q.notificaciones
+      tickets: q.tickets
+      documentos: q.documentos
+    routing:
+      notificaciones:
+        - usuario.registrado
+        - reserva.#
+      tickets:
+        - reserva.creada
+      documentos:
+        - comprobante
+    retencion:
+      max-length: 10000
+      ttl-ms: 86400000
